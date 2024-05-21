@@ -16,6 +16,30 @@ def dump(obj):
   for attr in dir(obj):
     print("obj.%s = %r" % (attr, getattr(obj, attr)))
 
+def read_characteristic(char):
+    try:
+        result = await char.read(timeout_ms=5000)
+        print("Type: ",type(result))
+        print("    Read:", result)
+    except TypeError as e:
+        print("      ","??NoneType??,",e) 
+    except ValueError:
+        print("      ","No read")
+    except asyncio.TimeoutError:
+        print("      ","Timeout")
+def write_characteristic(char):
+    try:
+        msg = bytearray()
+        result = await char.write(msg)
+        print("    Write:", result)
+    except TypeError as e:
+        print("      ","??NoneType??,",e) 
+    except ValueError:
+        print("      ","No write")
+    except asyncio.TimeoutError:
+        print("      ","Timeout")
+        
+        
 async def find_device():
     # Scan for 5 seconds, in active mode, with very low interval/window (to
     # maximise detection rate).
@@ -58,6 +82,8 @@ async def main():
         print("Service: ",service)
         #dump(service)
         serviceUUIDs.add(service.uuid)
+        
+    # UUID Definition
     # 0x1800 GAP Service
         #0x2a01 BLE_UUID_GAP_CHARACTERISTIC_APPEARANCE
         #0x2a00 BLE_UUID_GAP_CHARACTERISTIC_DEVICE_NAME
@@ -90,41 +116,40 @@ async def main():
             try:
                 service = await connection.service(uuid)
                 async for char in service.characteristics():
-                    # Reading this UUID after writing 0 gives a NONMEM error
-                    if char.uuid not in [bluetooth.UUID('5ec4e520-9804-11e3-b4b9-0002a5d5c51b')]:
-                        print("  ",char)
-                        print("     - Reading")
-                        try:
-                            result = await char.read(timeout_ms=1000)
-                            print("    Read:", result)
-                        except TypeError:
-                            print("      ","??NoneType??") 
-                        except ValueError:
-                            print("      ","No read")
-                        except asyncio.TimeoutError:
-                            print("      ","Timeout")
+                    # 
+                    # 5ec4e520-9804-11e3-b4b9-0002a5d5c51b - 10  (GATTC Service Done)  
+                    # e3f9af20-2674-11e3-879e-0002a5d5c51b - x2  (Flag Read)          - never returns anything
+                    # 4e349c00-999e-11e3-b341-0002a5d5c51b - x2  (Flag Read)          - never returns anything
+                    # 4ed124e0-9803-11e3-b14c-0002a5d5c51b - x2  (Flag Read)          - never returns anything
+                    # 1717b3c0-9803-11e3-90e1-0002a5d5c51b - x8  (Flag Write)         - gets a timeout on write
+                    # 35ddd0a0-9803-11e3-9a8b-0002a5d5c51b - 18  (GATTC Notify)
+                    # 5c7d82a0-9803-11e3-8a6c-0002a5d5c51b - 16  (GATTC READ Done)
+                    # 6be8f580-9803-11e3-ab03-0002a5d5c51b - 16  (GATTC READ Done)
+                    # 4ed124e0-9803-11e3-b14c-0002a5d5c51b - x2  (Flag Read)
+                    
+                    print("  ",char)
+                    if char.uuid in [
+                            bluetooth.UUID('5ec4e520-9804-11e3-b4b9-0002a5d5c51b'),
+                            bluetooth.UUID('e3f9af20-2674-11e3-879e-0002a5d5c51b'),
+                            bluetooth.UUID('4e349c00-999e-11e3-b341-0002a5d5c51b'),
+                            bluetooth.UUID('35ddd0a0-9803-11e3-9a8b-0002a5d5c51b'),
+                            bluetooth.UUID('5c7d82a0-9803-11e3-8a6c-0002a5d5c51b'),
+                            bluetooth.UUID('6be8f580-9803-11e3-ab03-0002a5d5c51b'),
+                            bluetooth.UUID('4ed124e0-9803-11e3-b14c-0002a5d5c51b'),
+                        ]:
+                        print("  ","Skipped")
+                        next
+                    else:
+                        print("     - Reading")                        
+                        await read_characteristic(char)
+
                         print("     - Writing")
-                        try:
-                            result = await char.write(0)
-                            print("    Write:", result)
-                        except TypeError:
-                            print("      ","??NoneType??") 
-                        except ValueError:
-                            print("      ","No write")
-                        except asyncio.TimeoutError:
-                            print("      ","Timeout")
-                        print("     - Reading")
-                        try:
-                            result = await char.read(timeout_ms=1000)
-                            print("    Read:", result)
-                        except TypeError:
-                            print("      ","??NoneType??") 
-                        except ValueError:
-                            print("      ","No read")
-                        except asyncio.TimeoutError:
-                            print("      ","Timeout")
-            except TypeError:
-                print("  ","??TypeError??") 
+                        await write_characteristic(char)
+                        
+                        print("     - Reading")                        
+                        await read_characteristic(char)
+            except TypeError as e:
+                print("??TypeError??,",e) 
 
 
 asyncio.run(main())
