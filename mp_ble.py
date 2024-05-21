@@ -27,7 +27,7 @@ def dump(obj):
   for attr in dir(obj):
     print("obj.%s = %r" % (attr, getattr(obj, attr)))
 
-async def find_temp_sensor():
+async def find_device():
     # Scan for 5 seconds, in active mode, with very low interval/window (to
     # maximise detection rate).
     async with aioble.scan(5000, interval_us=30000, window_us=30000, active=True) as scanner:
@@ -49,9 +49,9 @@ async def find_temp_sensor():
 
 
 async def main():
-    device = await find_temp_sensor()
+    device = await find_device()
     if not device:
-        print("Temperature sensor not found")
+        print("Device not found")
         return
 
     try:
@@ -91,37 +91,76 @@ async def main():
 #     async for char in service.characteristics():
 #         print(char)
     
-
+    print("\nTrying to read\n")
     print("UUIDs: ", serviceUUIDs)
     for uuidString in serviceUUIDs:
         uuid = bluetooth.UUID(uuidString)
-        print("UUID: ", uuid)
-        service = await connection.service(uuid)
-        async for char in service.characteristics():
-            print(char)
-            
-#     async for service in connection.services():
-#         print("Service: ",service)
-#         await asyncio.sleep_ms(1000)
-#         async for serviceInner in connection.services(service.uuid):
-#             print("Characteristic:")
-# #            for characteristic in serviceInner.characteristics():
-# #                 print("Characteristic: ", characteristic)
-        
+        print("uuidString", uuidString,"UUID: ", uuid)
+        if uuid in [bluetooth.UUID(0x1801), bluetooth.UUID(0x1800), bluetooth.UUID(0x180a)]:
+            print("  Skip")
+        else:
+            try:
+                service = await connection.service(uuid)
+                async for char in service.characteristics():
+                    print("  ",char)
+                    try:
+                        result = await char.read(timeout_ms=1000)
+                        print("    ", result)
+                        await char.write(0)
+                    except TypeError:
+                        print("    ","??NoneType??") 
+                    except ValueError:
+                        print("    ","No read")
+                    except asyncio.TimeoutError:
+                        print("    ","Timeout")
+            except TypeError:
+                print("  ","??NoneType??") 
 
-    async with connection:
-        try:
-            print("Queue: ", connection.services()._queue)
-            #temp_service = await connection.service(_ENV_SENSE_UUID)
-            #temp_characteristic = await temp_service.characteristic(_ENV_SENSE_TEMP_UUID)
-        except asyncio.TimeoutError:
-            print("Timeout discovering services/characteristics")
-            return
+    print("\nTrying to write\n")
+    for uuidString in serviceUUIDs:
+        uuid = bluetooth.UUID(uuidString)
+        print("uuidString", uuidString,"UUID: ", uuid)
+        if uuid in [bluetooth.UUID(0x1801), bluetooth.UUID(0x1800), bluetooth.UUID(0x180a)]:
+            print("  Skip")
+        else:
+            try:
+                service = await connection.service(uuid)
+                async for char in service.characteristics():
+                    print("  ",char)
+                    try:
+                        await char.write(0)
+                    except TypeError:
+                        print("    ","??NoneType??") 
+                    except ValueError:
+                        print("    ","No read")
+                    except asyncio.TimeoutError:
+                        print("    ","Timeout")
+            except TypeError:
+                print("  ","??NoneType??") 
 
-        #while True:
-            #temp_deg_c = _decode_temperature(await temp_characteristic.read())
-            #print("Temperature: {:.2f}".format(temp_deg_c))
-        #    await asyncio.sleep_ms(1000)
-
+    print("\nTrying to read\n")
+    print("UUIDs: ", serviceUUIDs)
+    for uuidString in serviceUUIDs:
+        uuid = bluetooth.UUID(uuidString)
+        print("uuidString", uuidString,"UUID: ", uuid)
+        if uuid in [bluetooth.UUID(0x1801), bluetooth.UUID(0x1800), bluetooth.UUID(0x180a)]:
+            print("  Skip")
+        else:
+            try:
+                service = await connection.service(uuid)
+                async for char in service.characteristics():
+                    print("  ",char)
+                    try:
+                        result = await char.read(timeout_ms=1000)
+                        print("    ", result)
+                        await char.write(0)
+                    except TypeError:
+                        print("    ","??NoneType??") 
+                    except ValueError:
+                        print("    ","No read")
+                    except asyncio.TimeoutError:
+                        print("    ","Timeout")
+            except TypeError:
+                print("  ","??NoneType??") 
 
 asyncio.run(main())
