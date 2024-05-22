@@ -27,11 +27,13 @@ def read_characteristic(char):
         print("      ","No read")
     except asyncio.TimeoutError:
         print("      ","Timeout")
-def write_characteristic(char):
+        
+async def write_characteristic(char, msg):
+    print("writing...")
     try:
-        msg = bytearray()
+        print("    Write: ", msg)
         result = await char.write(msg)
-        print("    Write:", result)
+        print("    Written:", result)
     except TypeError as e:
         print("      ","??NoneType??,",e) 
     except ValueError:
@@ -107,6 +109,7 @@ async def main():
 #         print(char)
     
     print("UUIDs: ", serviceUUIDs)
+    noitifyUUID=""
     for uuidString in serviceUUIDs:
         uuid = bluetooth.UUID(uuidString)
         print("uuidString", uuidString,"UUID: ", uuid)
@@ -132,7 +135,8 @@ async def main():
                             bluetooth.UUID('5ec4e520-9804-11e3-b4b9-0002a5d5c51b'),
                             bluetooth.UUID('e3f9af20-2674-11e3-879e-0002a5d5c51b'),
                             bluetooth.UUID('4e349c00-999e-11e3-b341-0002a5d5c51b'),
-                            bluetooth.UUID('35ddd0a0-9803-11e3-9a8b-0002a5d5c51b'),
+                            #bluetooth.UUID('1717b3c0-9803-11e3-90e1-0002a5d5c51b'), #Flag Write
+                            #bluetooth.UUID('35ddd0a0-9803-11e3-9a8b-0002a5d5c51b'), #Notify
                             bluetooth.UUID('5c7d82a0-9803-11e3-8a6c-0002a5d5c51b'),
                             bluetooth.UUID('6be8f580-9803-11e3-ab03-0002a5d5c51b'),
                             bluetooth.UUID('4ed124e0-9803-11e3-b14c-0002a5d5c51b'),
@@ -140,16 +144,50 @@ async def main():
                         print("  ","Skipped")
                         next
                     else:
-                        print("     - Reading")                        
-                        await read_characteristic(char)
+                        if char.properties == 18:
+                            notifyUUID = char.uuid
+                        elif char.properties == 8:
+                            writeUUID = char.uuid
+                        else:
+                            print ("Do other stuff")
+                            #print("     - Reading")                        
+                            #await read_characteristic(char)
 
-                        print("     - Writing")
-                        await write_characteristic(char)
-                        
-                        print("     - Reading")                        
-                        await read_characteristic(char)
+                            #print("     - Writing")
+                            #await write_characteristic(char)
+                            
+                            #print("     - Reading")                        
+                            #await read_characteristic(char)
+                            
+                print ("Notifies: ", notifyUUID)
+                notify_char = await service.characteristic(uuid=notifyUUID)
+                await notify_char.subscribe()
+                print("Subscribed!")
+                
+                print ("Write: ", writeUUID)
+                write_char = await service.characteristic(uuid=writeUUID)
+                print ("Write_char: ",write_char)
+
+                msg = bytearray(b'\x00')
+                await write_characteristic(write_char, msg)
+                
+                print("Will wait for data...")
+                data = await notify_char.notified()
+                print("Data: ",data)
+                
+                print("Will wait for data...")
+                
+                msg = bytearray(b'\x01')
+                await write_characteristic(write_char, msg)                    
+
+                
+                while data != bytearray(b'\x00\x00\x00\x00'):
+                    data = await notify_char.notified()
+                    print("Data: ",data)
+                
             except TypeError as e:
                 print("??TypeError??,",e) 
 
+            
 
 asyncio.run(main())
