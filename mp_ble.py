@@ -137,8 +137,8 @@ async def main():
                             bluetooth.UUID('4e349c00-999e-11e3-b341-0002a5d5c51b'),
                             #bluetooth.UUID('1717b3c0-9803-11e3-90e1-0002a5d5c51b'), #Flag Write
                             #bluetooth.UUID('35ddd0a0-9803-11e3-9a8b-0002a5d5c51b'), #Notify
-                            bluetooth.UUID('5c7d82a0-9803-11e3-8a6c-0002a5d5c51b'),
-                            bluetooth.UUID('6be8f580-9803-11e3-ab03-0002a5d5c51b'),
+                            bluetooth.UUID('5c7d82a0-9803-11e3-8a6c-0002a5d5c51b'),  #GATTC READ Done
+                            bluetooth.UUID('6be8f580-9803-11e3-ab03-0002a5d5c51b'),  #GATTC READ Done
                             bluetooth.UUID('4ed124e0-9803-11e3-b14c-0002a5d5c51b'),
                         ]:
                         print("  ","Skipped")
