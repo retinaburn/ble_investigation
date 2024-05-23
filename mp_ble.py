@@ -174,14 +174,14 @@ async def main():
                 print("Will wait for data...")
                 data = await notify_char.notified()
                 print("Data: ",data)
-                
-                print("Will wait for data...")
-                
-                msg = bytearray(b'\x01')
+                            
+                msg = bytearray(b'\x00')
                 await write_characteristic(write_char, msg)                    
-
                 
                 while data != bytearray(b'\x00\x00\x00\x00'):
+                    msg = bytearray(b'\x00')
+                    await write_characteristic(write_char, msg)
+                    
                     data = await notify_char.notified()
                     print("Data: ",data)
                 
