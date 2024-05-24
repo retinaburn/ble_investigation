@@ -1,5 +1,6 @@
 import sys
-
+import network
+import ntptime
 # ruff: noqa: E402
 sys.path.append("")
 
@@ -8,9 +9,25 @@ from micropython import const
 import uasyncio as asyncio
 import aioble
 import bluetooth
-
+import time
 import random
 import struct
+
+def dstTime():
+    year = time.localtime()[0] #get current year
+    # print(year)
+    HHMarch = time.mktime((year,3 ,(14-(int(5*year/4+1))%7),1,0,0,0,0,0)) #Time of March change to DST
+    HHNovember = time.mktime((year,10,(7-(int(5*year/4+1))%7),1,0,0,0,0,0)) #Time of November change to EST
+    # print(HHNovember)
+    now=time.time()
+    if now < HHMarch : # we are before last sunday of march
+        dst=time.localtime(now-18000) # EST: UTC-5H
+    elif now < HHNovember : # we are before last sunday of october
+        dst=time.localtime(now-14400) # DST: UTC-4H
+    else: # we are after last sunday of october
+        dst=time.localtime(now-18000) # EST: UTC-5H
+    return(dst)
+
 
 def dump(obj):
   for attr in dir(obj):
@@ -19,8 +36,12 @@ def dump(obj):
 def read_characteristic(char):
     try:
         result = await char.read(timeout_ms=5000)
-        print("Type: ",type(result))
-        print("    Read:", result)
+        #print("Type: ",type(result))
+        if (type(result) == bytes):
+            #time.time() + (31557600000 * 30)
+            print("    ",((time.time_ns() // 1_000_000)+(31557600000 * 30))," Read: ","".join("\\x%02x" % i for i in result))
+        else:
+            print("    ",((time.time_ns() // 1_000_000)+(31557600000 * 30))," Read:", result)
     except TypeError as e:
         print("      ","??NoneType??,",e) 
     except ValueError:
@@ -129,8 +150,24 @@ async def main():
                     # 5c7d82a0-9803-11e3-8a6c-0002a5d5c51b - 16  (GATTC READ Done)
                     # 6be8f580-9803-11e3-ab03-0002a5d5c51b - 16  (GATTC READ Done)
                     # 4ed124e0-9803-11e3-b14c-0002a5d5c51b - x2  (Flag Read)
+                    # 7241b880-a560-11e3-9f31-0002a5d5c51b - x2  (Flag Read)
+                    typeOfOp = ""
+                    if char.properties == 10:
+                        typeOfOp = "GATTC Service Done"
+                    elif char.properties == 2:                    
+                        typeOfOp = "Flag Read"
+                    elif char.properties == 4:
+                        typeOfOp = "Flag Write No Response"
+                    elif char.properties == 8:
+                        typeOfOp = "Flag Write"
+                    elif char.properties == 18:
+                        typeOfOp = "GATTC Notify"
+                    elif char.properties == 16:
+                        typeOfOp = "GATTC Read Done"
+                    else:
+                        typeOfOp = "Unknown"
                     
-                    print("  ",char)
+                    print(f"  {char} {typeOfOp}")
                     if char.uuid in [
                             bluetooth.UUID('5ec4e520-9804-11e3-b4b9-0002a5d5c51b'),
                             bluetooth.UUID('e3f9af20-2674-11e3-879e-0002a5d5c51b'),
@@ -148,6 +185,7 @@ async def main():
                             notifyUUID = char.uuid
                         elif char.properties == 8:
                             writeUUID = char.uuid
+                        elif char.properties == 2 and char.uuid == bluetooth.UUID('7241b880-a560-11e3-9f31-0002a5d5c51b'):                            readUUID = char.uuid
                         else:
                             print ("Do other stuff")
                             #print("     - Reading")                        
@@ -159,6 +197,11 @@ async def main():
                             #print("     - Reading")                        
                             #await read_characteristic(char)
                             
+                print ("Read: ", readUUID)
+                while True:
+                    read_char = await service.characteristic(uuid=readUUID)
+                    await read_characteristic(read_char)
+                
                 print ("Notifies: ", notifyUUID)
                 notify_char = await service.characteristic(uuid=notifyUUID)
                 await notify_char.subscribe()
@@ -188,6 +231,24 @@ async def main():
             except TypeError as e:
                 print("??TypeError??,",e) 
 
-            
+s = network.WLAN(network.STA_IF)
+s.active(True)
+s.disconnect()
+print("Scanned: ", s.scan())
+s.connect("MOYNES", "good4bart") # Connect to an AP
+print("Connected: ", s.isconnected())
+
+for i in range(5):
+    time.sleep(5)
+    print("checking is connected: ", s.isconnected()," ",s.status())
+    if s.isconnected():
+        break
+
+try:
+    if s.isconnected():
+        ntptime.settime()
+except OSError as e:
+    print("OSError: ",e)
+print(time.localtime()," vs ",dstTime())            
 
 asyncio.run(main())
