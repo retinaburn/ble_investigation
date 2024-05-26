@@ -67,10 +67,24 @@ __SERVICE_UUID = '98186d60-2f47-11e6-8899-0002a5d5c51b'
 serviceUUIDs = set()
 serviceUUIDs.add(__SERVICE_UUID)
 
+                    # 5ec4e520-9804-11e3-b4b9-0002a5d5c51b - 10  (GATTC Service Done)  
+                    # e3f9af20-2674-11e3-879e-0002a5d5c51b - x2  (Flag Read)          - never returns anything
+                    # 4e349c00-999e-11e3-b341-0002a5d5c51b - x2  (Flag Read)          - never returns anything
+                    # 4ed124e0-9803-11e3-b14c-0002a5d5c51b - x2  (Flag Read)          - never returns anything
+                    # 1717b3c0-9803-11e3-90e1-0002a5d5c51b - x8  (Flag Write)         - gets a timeout on write
+                    # 35ddd0a0-9803-11e3-9a8b-0002a5d5c51b - 18  (GATTC Notify)
+                    # 5c7d82a0-9803-11e3-8a6c-0002a5d5c51b - 16  (GATTC READ Done)
+                    # 6be8f580-9803-11e3-ab03-0002a5d5c51b - 16  (GATTC READ Done)
+                    # a46a4a80-9803-11e3-8f3c-0002a5d5c51b - 16  (GATTC READ Done)
+                    # d57cda20-9803-11e3-8426-0002a5d5c51b - 16  (GATTC Read Done)
+                    # ec865fc0-9803-11e3-8bf6-0002a5d5c51b - x4  (Flag Write No Response)
+                    # 7241b880-a560-11e3-9f31-0002a5d5c51b - x2  (Flag Read)
+
 __FLAG_READ_UUID_1 = 'e3f9af20-2674-11e3-879e-0002a5d5c51b'
 __FLAG_READ_UUID_2 = '4e349c00-999e-11e3-b341-0002a5d5c51b'
 __FLAG_READ_UUID_3 = '4ed124e0-9803-11e3-b14c-0002a5d5c51b'
 __FLAG_READ_UUID_4 = '7241b880-a560-11e3-9f31-0002a5d5c51b'
+
 readUUIDs = [__FLAG_READ_UUID_1,
              __FLAG_READ_UUID_2,
              __FLAG_READ_UUID_3,

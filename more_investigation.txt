@@ -63,3 +63,28 @@ Read:  UUID('7241b880-a560-11e3-9f31-0002a5d5c51b')
                                  |   |_ Always increasing, how often?
                                  |
                                  |_ Carried over from 3
+
+
+Read:  UUID('7241b880-a560-11e3-9f31-0002a5d5c51b')
+     1716661437997  Read:  \x15\x80\x36\x01\x29\x6a\x79\x05\x2c\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b
+     1716661439908  Read:  \x15\x80\x83\x01\x6e\x6a\x79\x05\x34\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b
+     1716661441707  Read:  \x15\x80\xe9\x01\xca\x6a\x79\x05\x3e\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b
+     1716661443827  Read:  \x15\x81\x4f\x01\x26\x6b\x79\x05\x48\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b
+     1716661445948  Read:  \x15\x81\xb5\x01\x82\x6b\x79\x05\x52\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b
+     1716661447987  Read:  \x15\x82\x1b\x01\xde\x6b\x79\x05\x5c\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b
+     1716661450199  Read:  \x15\x82\x9a\x01\x50\x6c\x79\x05\x69\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b
+     1716661452307  Read:  \x15\x83\x01\x01\xad\x6c\x79\x05\x73\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b
+     1716661454347  Read:  \x15\x83\x67\x01\x09\x6d\x79\x05\x7d\xdd\x34\x01\x89\x36\x23\x01\x00\x00\xef\x0b       
+                                 2   3      5   6            9   10          13                      19                         
+                                 ^   ^      ^   ^            ^   ^            ^                       ^_ indicates paused when x23?
+                                 |   |      |   |            | Always increasing 
+                                 |   |      |   |                |            |
+                                 |   |      |   |                | Rolling over from 9
+                                 |   |      |   |                             |
+                                 |   |      |   |_ Carried over from 5        |_ increased during exercise
+                                 |   |      |   
+                                 |   |      |_ Always increasing very fast?
+                                 |   |
+                                 |   |_ Always increasing, how often?
+                                 |
+                                 |_ Carried over from 3                                                                           

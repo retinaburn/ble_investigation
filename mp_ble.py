@@ -141,16 +141,19 @@ async def main():
                 service = await connection.service(uuid)
                 async for char in service.characteristics():
                     # 
-                    # 5ec4e520-9804-11e3-b4b9-0002a5d5c51b - 10  (GATTC Service Done)  
-                    # e3f9af20-2674-11e3-879e-0002a5d5c51b - x2  (Flag Read)          - never returns anything
-                    # 4e349c00-999e-11e3-b341-0002a5d5c51b - x2  (Flag Read)          - never returns anything
-                    # 4ed124e0-9803-11e3-b14c-0002a5d5c51b - x2  (Flag Read)          - never returns anything
-                    # 1717b3c0-9803-11e3-90e1-0002a5d5c51b - x8  (Flag Write)         - gets a timeout on write
-                    # 35ddd0a0-9803-11e3-9a8b-0002a5d5c51b - 18  (GATTC Notify)
-                    # 5c7d82a0-9803-11e3-8a6c-0002a5d5c51b - 16  (GATTC READ Done)
-                    # 6be8f580-9803-11e3-ab03-0002a5d5c51b - 16  (GATTC READ Done)
-                    # 4ed124e0-9803-11e3-b14c-0002a5d5c51b - x2  (Flag Read)
-                    # 7241b880-a560-11e3-9f31-0002a5d5c51b - x2  (Flag Read)
+                    # e3f9af20-2674-11e3-879e-0002a5d5c51b - 02  31 32    (Flag Read) - UniqueId Desc
+                    # 5ec4e520-9804-11e3-b4b9-0002a5d5c51b - 10  34 35    (GATTC Service Done)  - LinkTest
+                    # 4e349c00-999e-11e3-b341-0002a5d5c51b - 02  37 38    (Flag Read) - Status Desc
+                    # 1717b3c0-9803-11e3-90e1-0002a5d5c51b - 08  40 41    (Flag Write) - Command Record
+                    # 35ddd0a0-9803-11e3-9a8b-0002a5d5c51b - 18  43 45    (GATTC Notify) - Ack Record
+                    # 4ed124e0-9803-11e3-b14c-0002a5d5c51b - 02  47 48    (Flag Read) - Data Record              
+                    # 5c7d82a0-9803-11e3-8a6c-0002a5d5c51b - 16  50 52    (GATTC READ Done) - Event REcord
+                    # 6be8f580-9803-11e3-ab03-0002a5d5c51b - 16  54 56    (GATTC READ Done) - Streaming Read Data 0
+                    # a46a4a80-9803-11e3-8f3c-0002a5d5c51b - 16  58 60    (GATTC READ Done) - Descriptor
+                    # b8066ec0-9803-11e3-8346-0002a5d5c51b - 16  62 64    (GATTC READ Done) - Streaming Read Data 2 
+                    # d57cda20-9803-11e3-8426-0002a5d5c51b - 16  66 68    (GATTC READ Done) - Streaming Read Data 3
+                    # ec865fc0-9803-11e3-8bf6-0002a5d5c51b - 04  70 71    (Flag Write No Response) - Streaming Write Data 0
+                    # 7241b880-a560-11e3-9f31-0002a5d5c51b - 02  73 65535 (Flag Read) - Debug Status
                     typeOfOp = ""
                     if char.properties == 10:
                         typeOfOp = "GATTC Service Done"
@@ -168,6 +171,8 @@ async def main():
                         typeOfOp = "Unknown"
                     
                     print(f"  {char} {typeOfOp}")
+                    
+                    ## Skip List of Characteristics
                     if char.uuid in [
                             bluetooth.UUID('5ec4e520-9804-11e3-b4b9-0002a5d5c51b'),
                             bluetooth.UUID('e3f9af20-2674-11e3-879e-0002a5d5c51b'),
@@ -177,15 +182,17 @@ async def main():
                             bluetooth.UUID('5c7d82a0-9803-11e3-8a6c-0002a5d5c51b'),  #GATTC READ Done
                             bluetooth.UUID('6be8f580-9803-11e3-ab03-0002a5d5c51b'),  #GATTC READ Done
                             bluetooth.UUID('4ed124e0-9803-11e3-b14c-0002a5d5c51b'),
+                            #bluetooth.UUID('ec865fc0-9803-11e3-8bf6-0002a5d5c51b'),  #Flag Write No Response
                         ]:
                         print("  ","Skipped")
                         next
                     else:
                         if char.properties == 18:
                             notifyUUID = char.uuid
-                        elif char.properties == 8:
+                        elif char.properties == 8: # char.properties == 4: -- if write no response, no data comes back
                             writeUUID = char.uuid
-                        elif char.properties == 2 and char.uuid == bluetooth.UUID('7241b880-a560-11e3-9f31-0002a5d5c51b'):                            readUUID = char.uuid
+                        elif char.properties == 2 and char.uuid == bluetooth.UUID('7241b880-a560-11e3-9f31-0002a5d5c51b'):
+                            readUUID = char.uuid
                         else:
                             print ("Do other stuff")
                             #print("     - Reading")                        
@@ -198,10 +205,14 @@ async def main():
                             #await read_characteristic(char)
                             
                 print ("Read: ", readUUID)
-                while True:
-                    read_char = await service.characteristic(uuid=readUUID)
-                    await read_characteristic(read_char)
-                
+#                 while True:
+#                     read_char = await service.characteristic(uuid=readUUID)
+#                     await read_characteristic(read_char)
+                read_char = await service.characteristic(uuid=readUUID)
+                await read_characteristic(read_char)
+
+
+
                 print ("Notifies: ", notifyUUID)
                 notify_char = await service.characteristic(uuid=notifyUUID)
                 await notify_char.subscribe()
@@ -221,12 +232,15 @@ async def main():
                 msg = bytearray(b'\x00')
                 await write_characteristic(write_char, msg)                    
                 
-                while data != bytearray(b'\x00\x00\x00\x00'):
-                    msg = bytearray(b'\x00')
+                dataInt = 0
+                #while data != bytearray(b'\x00\x00\x00\x00'):
+                while True:
+                    msg = bytearray(dataInt.to_bytes(2, 'big'))
                     await write_characteristic(write_char, msg)
                     
                     data = await notify_char.notified()
                     print("Data: ",data)
+                    dataInt = dataInt + 1
                 
             except TypeError as e:
                 print("??TypeError??,",e) 
