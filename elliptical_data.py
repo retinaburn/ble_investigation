@@ -13,21 +13,6 @@ import time
 import random
 import struct
 
-def dstTime():
-    year = time.localtime()[0] #get current year
-    # print(year)
-    HHMarch = time.mktime((year,3 ,(14-(int(5*year/4+1))%7),1,0,0,0,0,0)) #Time of March change to DST
-    HHNovember = time.mktime((year,10,(7-(int(5*year/4+1))%7),1,0,0,0,0,0)) #Time of November change to EST
-    # print(HHNovember)
-    now=time.time()
-    if now < HHMarch : # we are before last sunday of march
-        dst=time.localtime(now-18000) # EST: UTC-5H
-    elif now < HHNovember : # we are before last sunday of october
-        dst=time.localtime(now-14400) # DST: UTC-4H
-    else: # we are after last sunday of october
-        dst=time.localtime(now-18000) # EST: UTC-5H
-    return(dst)
-
 
 def read_characteristic(char):
     try:
