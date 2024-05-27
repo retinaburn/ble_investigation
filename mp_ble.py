@@ -249,7 +249,7 @@ s = network.WLAN(network.STA_IF)
 s.active(True)
 s.disconnect()
 print("Scanned: ", s.scan())
-s.connect("MOYNES", "good4bart") # Connect to an AP
+s.connect("MOYNES", "") # Connect to an AP
 print("Connected: ", s.isconnected())
 
 for i in range(5):
