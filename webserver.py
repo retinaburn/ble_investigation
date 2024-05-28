@@ -44,7 +44,7 @@ class Webserver:
             raise(e)
 
 
-    async def __getFiles(self):
+    def __getFiles(self):
         files = []
         for file in os.listdir():        
             if file.endswith(".py"):
@@ -86,7 +86,7 @@ class Webserver:
                 print(f"Waiting for connection...")
                 self.conn, addr = self.s.accept()
                 print(f"Got a connection from {str(addr)}")
-                request = conn.recv(1024)
+                request = self.conn.recv(1024)
                 request = str(request)
                 print(f"Content: {request}")
                 response = self.__getPage()
@@ -95,7 +95,6 @@ class Webserver:
                 self.conn.send("Connection: close\n\n")
                 self.conn.sendall(response)
                 self.conn.close()
-                self.__close()
         except OSError as e:
             print("OSError: ", e)
             self.__close()
@@ -103,16 +102,17 @@ class Webserver:
             self.__close()
             
     def __close(self):
+        print("Cleaning up")
         if self.conn:
             self.conn.close()
-            if self.s:
-                self.s.close()
+        if self.s:
+            self.s.close()
             
 try:
     w = Webserver()
     w.server()
     print("Done?")
-    #while True:
-    #    pass
+#     while True:
+#         pass
 except OSError as e:
     print("Error ", e)
