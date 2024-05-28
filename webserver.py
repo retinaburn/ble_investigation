@@ -3,6 +3,7 @@ import network
 import gc
 import sys
 import os
+import asyncio
 
 gc.collect()
 
@@ -24,6 +25,7 @@ class Webserver:
             
         station = network.WLAN(network.STA_IF)
         station.active(True)
+        #station.config(pm = 0xa11140) causes a wifi unknown error
         station.connect(secrets['wifi']['ssid'], secrets['wifi']['password'])
         while station.isconnected() == False:
             print(f"Waiting for connection to wifi...")
@@ -34,7 +36,7 @@ class Webserver:
 
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            #s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            #self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.s.bind(('',80))
             self.s.listen(5)
         except OSError as e:
@@ -75,12 +77,17 @@ class Webserver:
             </html>
         """
         return html
+    
+    async def serve(self):
+        print("Serving")
+        #asyncio.create_task(self.server())
+        await self.server()
+        
 
-    def server(self):
+    async def server(self):
         
         self.__init()
-        
-        
+                
         try:
             while True:
                 print(f"Waiting for connection...")
@@ -89,11 +96,26 @@ class Webserver:
                 request = self.conn.recv(1024)
                 request = str(request)
                 print(f"Content: {request}")
-                response = self.__getPage()
-                self.conn.send("HTTP/1.1 200 OK\n")
-                self.conn.send("Content-Type: text/html\n")
-                self.conn.send("Connection: close\n\n")
-                self.conn.sendall(response)
+                split_request = request.split()
+                requested_file = split_request[1][1:len(split_request[1])]
+                if split_request[1] == "/":
+                    response = self.__getPage()
+                    self.conn.send("HTTP/1.1 200 OK\n")
+                    self.conn.send("Content-Type: text/html\n")
+                    self.conn.send("Connection: close\n\n")
+                    self.conn.sendall(response)
+
+                elif split_request[1] == "/favicon.ico":
+                    self.conn.send("HTTP/1.1 200 OK\n")
+                    self.conn.send("Content-Type: text/html\n")
+                    self.conn.send("Connection: close\n\n")                    
+                else:
+                    print(f"Requested: {requested_file}")
+                    f = open(requested_file)
+                    data = f.read()
+                    #print(f"Read: {data}")
+                    self.conn.send(data)
+                    print(f"{requested_file} sent")
                 self.conn.close()
         except OSError as e:
             print("OSError: ", e)
@@ -110,9 +132,14 @@ class Webserver:
             
 try:
     w = Webserver()
-    w.server()
+    asyncio.run(w.serve())
+    #asyncio.create_task(w.serve())
+    #w.server()
     print("Done?")
 #     while True:
 #         pass
 except OSError as e:
     print("Error ", e)
+finally:
+    asyncio.new_event_loop()
+    
