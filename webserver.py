@@ -108,13 +108,17 @@ class Webserver:
                 elif split_request[1] == "/favicon.ico":
                     self.conn.send("HTTP/1.1 200 OK\n")
                     self.conn.send("Content-Type: text/html\n")
-                    self.conn.send("Connection: close\n\n")                    
+                    self.conn.send("Connection: close\n")                    
                 else:
                     print(f"Requested: {requested_file}")
                     f = open(requested_file)
                     data = f.read()
                     #print(f"Read: {data}")
-                    self.conn.send(data)
+                    self.conn.send("HTTP/1.1 200 OK\n")
+                    self.conn.send("Connection: close\n")                    
+                    self.conn.send("Content-Type: text/plain\n")
+                    #self.conn.send("Content-Disposition: attachment; filename=\"" + requested_file + "\"\n")
+                    self.conn.sendall(data)
                     print(f"{requested_file} sent")
                 self.conn.close()
         except OSError as e:
