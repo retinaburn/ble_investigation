@@ -166,6 +166,12 @@ def calculate(data):
     not_first = True
     return (0, 0, 0, 0, 0, 0)
 
+def get_filename():
+    now = time.localtime()
+    filename = ""+str(now[0])+"-"+str(now[1])+"-"+str(now[2])+"T"+str(now[3])+str(now[4])+str(now[5])+".csv"
+    print(f"Filename: {filename}")
+    return filename
+
 async def main():
     device = await find_device()
     if not device:
@@ -191,8 +197,8 @@ async def main():
                 
             print(f"{readUUIDs[0]},",
                   )
-
-            print("start_time, delta_time, cadence, resistance, energy, energy * delta_time, data")
+                
+            #file.write(header+"\n")
             while True:
 
                 readInfo = []
@@ -205,16 +211,34 @@ async def main():
                     
                     #readInfo.append(await read_characteristic(read_char))
                     await notify_char.subscribe()
-                    #print("Subscribed")	
+                    #print("Subscribed")
+                    start_detected = False
+                    end_detected = False
+                    filename = ""
                     while True:
                         data = await notify_char.notified()
+                        if filename == "":
+                            filename = get_filename()
+                            file = open(filename, "w")
+                            header = "start_time, delta_time, cadence, resistance, energy, energy * delta_time, data"
+                            print(f"{header}\n")
+                            
                         current_time = ((time.time_ns() // 1_000_000)+(31557600000 * 30))
                         #print("    ",((time.time_ns() // 1_000_000)+(31557600000 * 30))," Data: ","".join("\\x%02x" % i for i in data))
                         
                         translated = calculate(data)
                         if translated != "":
                             print(f"{current_time},{translated[0]}, {translated[1]}, {translated[2]}, {translated[3]}, {translated[4]}, {translated[5]},{"".join('\\x%02x' % i for i in data)}")
-
+                            file.write(str(current_time)+","+str(translated[0])+","+str(translated[1])+","+str(translated[2])+","+str(translated[3])+","+str(translated[4])+","+str(translated[5])+","+"".join('\\x%02x' % i for i in data)+"\n")
+                            if translated[4] == 0 and translated[5]==0.0 and start_detected:
+                                end_detected = True
+                                print("End detected")
+                            if translated[4] == 0 and translated[5]==0.0 and not start_detected:
+                                start_detected = True
+                                print("Start detected")
+                        if end_detected:
+                            break
+            file.close()
         except TypeError as e:
                 print("??TypeError??,",e) 
 
