@@ -60,7 +60,7 @@ class Webserver2:
         """
         for file in files:
             html += "<a href=" + file + " download>" + file + "</a>"
-            html += "<br/>"
+            html += "<br/>\r\n"
         html +="""
             </html>
         """
@@ -71,13 +71,20 @@ class Webserver2:
         #1. Never seems to get the request reliably....
         request = await reader.readline()
         print(f"Content: {request}")
+        if (len(str(request)) == 0):
+            print("Skipping request...")
+            await writer.wait_closed()
+            return
+        
         split_request = str(request).split()
         print(f"Content: 1={split_request[0]},2={split_request[1]},3{split_request[2]}")
         if split_request[1] == "/":
             response = self.__getPage()
-            writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 2\r\n\r\n\r\n")
+            writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + str(len(response)) + "\r\n\r\n\r\n")
             writer.write(response)
             print(f"Response: {response}")
+        elif split_request[1] == "/favicon.ico":
+            writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 2\r\n\r\n\r\n")
         else:
             requested_file = split_request[1][1:len(split_request[1])]
 #             requested_file = request
@@ -87,10 +94,11 @@ class Webserver2:
             print(f"Read: {data}")
             writer.write(data)
             writer.write('\r\n')
+            await writer.wait_closed()
 
         print("Closing")
         await writer.drain()
-        #await writer.wait_closed()
+        
         print("Closed")
 
     async def serve(self):
@@ -103,16 +111,17 @@ class Webserver2:
 
     async def idle(self):
         while True:
-            #print("Idle...")
+            print("Idle...")
             await asyncio.sleep(5)
+
+w = Webserver2()
+#asyncio.run(w.serve())
+asyncio.create_task(w.serve())
+asyncio.run(w.idle())
+print("Done?")
+loop = asyncio.get_event_loop()
 try:
-    w = Webserver2()
-    #asyncio.run(w.serve())
-    asyncio.create_task(w.serve())
-    asyncio.run(w.idle())
-    print("Done?")
-except OSError as e:
-    print("Error ", e)
-finally:
-    asyncio.new_event_loop()
-    
+    loop.run_forever()
+except KeyboardInterrupt:
+    loop.close()
+print("Done")
