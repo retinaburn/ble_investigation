@@ -36,7 +36,7 @@ class Webserver:
 
         try:
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            #self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.s.bind(('',80))
             self.s.listen(5)
         except OSError as e:
