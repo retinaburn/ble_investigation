@@ -77,7 +77,7 @@ class Webserver2:
             return
         
         split_request = str(request).split()
-        print(f"Content: 1={split_request[0]},2={split_request[1]},3{split_request[2]}")
+        print(f"Content: 1={split_request[0]},2={split_request[1]},3={split_request[2]}")
         if split_request[1] == "/":
             response = self.__getPage()
             writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + str(len(response)) + "\r\n\r\n\r\n")
@@ -91,13 +91,26 @@ class Webserver2:
             print(f"Requested: {requested_file}")
             f = open(requested_file)
             data = f.read()
-            print(f"Read: {data}")
+            size = os.stat(requested_file)[6]
+            #print(f"Read: {data}")
+            print(f"Size: {size}, Length: {len(data)}")
+                        
+            #code.py      1135 vs 1210   = 75
+            #tinys3.py    1784 vs 1891   = 107
+            #mp_ble.py    ??   vs 3.90kb = ??
+            #webserver.py 2062 vs 2140   = 78
+            # Why is the len(data) different from what is downloaded?
+            # why is size of os.stat also different from what is downloaded?
+            #response = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + str(len(data)) + "\r\n"
+            #response = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + str(size) + "\r\n"
+            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + str(size) + "\r\n"
+            print(f"Response: {response}")
+            writer.write(response)
             writer.write(data)
-            writer.write('\r\n')
-            await writer.wait_closed()
 
         print("Closing")
         await writer.drain()
+        #await writer.wait_closed()
         
         print("Closed")
 
@@ -111,7 +124,7 @@ class Webserver2:
 
     async def idle(self):
         while True:
-            print("Idle...")
+            #print("Idle...")
             await asyncio.sleep(5)
 
 w = Webserver2()
