@@ -92,6 +92,7 @@ class Webserver:
             while True:
                 print(f"Waiting for connection...")
                 self.conn, addr = self.s.accept()
+                #1. Never gets a connection anymore ...what is going on ???
                 print(f"Got a connection from {str(addr)}")
                 request = self.conn.recv(1024)
                 request = str(request)
