@@ -49,7 +49,7 @@ class Webserver:
     def __getFiles(self):
         files = []
         for file in os.listdir():        
-            if file.endswith(".py"):
+            if file.endswith(".csv"):
                 print(f"{file}")
                 files.append(file)
         files_with_mtime = [(file, os.stat(file)[8]) for file in files]
@@ -92,6 +92,7 @@ class Webserver:
             while True:
                 print(f"Waiting for connection...")
                 self.conn, addr = self.s.accept()
+                self.conn.setblocking(True)
                 #1. Never gets a connection anymore ...what is going on ???
                 print(f"Got a connection from {str(addr)}")
                 request = self.conn.recv(1024)
@@ -112,15 +113,21 @@ class Webserver:
                     self.conn.send("Connection: close\n")                    
                 else:
                     print(f"Requested: {requested_file}")
-                    f = open(requested_file)
+                    f = open(requested_file, "rb")
                     data = f.read()
+                    print(f"Read: {str(len(data))}")                    
                     #print(f"Read: {data}")
                     self.conn.send("HTTP/1.1 200 OK\n")
                     self.conn.send("Connection: close\n")                    
                     self.conn.send("Content-Type: text/plain\n")
-                    #self.conn.send("Content-Disposition: attachment; filename=\"" + requested_file + "\"\n")
-                    self.conn.sendall(data)
-                    print(f"{requested_file} sent")
+                    self.conn.send("Content-Disposition: attachment; filename=\"" + requested_file + "\"\n")
+                    self.conn.send("Content-Length: " + str(len(data)) + "\r\n")
+                    #self.conn.sendall(data)
+                    wrote_bytes = self.conn.write(data)
+                    self.conn.write("\r\n")
+                    print(f"Wrote: {wrote_bytes}")
+                    await asyncio.sleep(10)
+                    print(f"{requested_file} sent")                    
                 self.conn.close()
         except OSError as e:
             print("OSError: ", e)
