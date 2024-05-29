@@ -5,7 +5,7 @@ import sys
 import os
 import asyncio
 
-gc.collect()
+#gc.collect()
 
 import ujson
 import time
@@ -68,14 +68,14 @@ class Webserver2:
     
 
     async def serve_client(self, reader, writer):
-        
+        #1. Never seems to get the request reliably....
         request = await reader.readline()
         print(f"Content: {request}")
         split_request = str(request).split()
         print(f"Content: 1={split_request[0]},2={split_request[1]},3{split_request[2]}")
         if split_request[1] == "/":
             response = self.__getPage()
-            writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n")
+            writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 2\r\n\r\n\r\n")
             writer.write(response)
             print(f"Response: {response}")
         else:
@@ -87,20 +87,19 @@ class Webserver2:
             print(f"Read: {data}")
             writer.write(data)
             writer.write('\r\n')
+
         print("Closing")
-        await reader.wait_closed()
-        #await asyncio.sleep(5)
         await writer.drain()
-        await writer.wait_closed()
+        #await writer.wait_closed()
         print("Closed")
 
     async def serve(self):
         print("Serving")
         self.__init()
         asyncio.create_task(asyncio.start_server(self.serve_client,"0.0.0.0", 80))
-        while True:
-            #print("heartbeat")
-            await asyncio.sleep(5)
+#         while True:
+#             #print("heartbeat")
+#             await asyncio.sleep(5)
 
     async def idle(self):
         while True:
