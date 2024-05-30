@@ -68,7 +68,6 @@ class Webserver2:
     
 
     async def serve_client(self, reader, writer):
-        #1. Never seems to get the request reliably....
         request = await reader.readline()
         print(f"Content: {request}")
         if (len(str(request)) == 0):
@@ -87,30 +86,24 @@ class Webserver2:
             writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 2\r\n\r\n\r\n")
         else:
             requested_file = split_request[1][1:len(split_request[1])]
-#             requested_file = request
             print(f"Requested: {requested_file}")
-            f = open(requested_file)
+            f = open(requested_file, "rb")
             data = f.read()
             size = os.stat(requested_file)[6]
             #print(f"Read: {data}")
             print(f"Size: {size}, Length: {len(data)}")
                         
-            #code.py      1135 vs 1210   = 75
-            #tinys3.py    1784 vs 1891   = 107
-            #mp_ble.py    ??   vs 3.90kb = ??
-            #webserver.py 2062 vs 2140   = 78
-            # Why is the len(data) different from what is downloaded?
-            # why is size of os.stat also different from what is downloaded?
-            #response = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + str(len(data)) + "\r\n"
-            #response = "HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: " + str(size) + "\r\n"
-            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: " + str(size) + "\r\n"
+            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n" + \
+                       "Content-Disposition: attachment; filename=\""+requested_file+"\"\r\n" + \
+                       "Content-Length: " + str(len(data)) + "\r\n" \
+                       "Connection: Close \r\n\r\n"
             print(f"Response: {response}")
             writer.write(response)
             writer.write(data)
 
         print("Closing")
         await writer.drain()
-        #await writer.wait_closed()
+        writer.close()
         
         print("Closed")
 
@@ -118,9 +111,6 @@ class Webserver2:
         print("Serving")
         self.__init()
         asyncio.create_task(asyncio.start_server(self.serve_client,"0.0.0.0", 80))
-#         while True:
-#             #print("heartbeat")
-#             await asyncio.sleep(5)
 
     async def idle(self):
         while True:
