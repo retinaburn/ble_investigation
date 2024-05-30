@@ -99,6 +99,8 @@ class Webserver:
                 request = str(request)
                 print(f"Content: {request}")
                 split_request = request.split()
+                if request == '':
+                    return
                 requested_file = split_request[1][1:len(split_request[1])]
                 if split_request[1] == "/":
                     response = self.__getPage()
