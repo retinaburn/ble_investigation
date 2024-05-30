@@ -110,7 +110,12 @@ class Webserver:
                 elif split_request[1] == "/favicon.ico":
                     self.conn.send("HTTP/1.1 200 OK\n")
                     self.conn.send("Content-Type: text/html\n")
+                    self.conn.send("Connection: close\n")
+                elif split_request[1] == "HNAPI/":
+                    self.conn.send("HTTP/1.1 200 OK\n")
+                    self.conn.send("Content-Type: text/html\n")
                     self.conn.send("Connection: close\n")                    
+
                 else:
                     print(f"Requested: {requested_file}")
                     f = open(requested_file, "rb")
