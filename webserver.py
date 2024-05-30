@@ -149,16 +149,16 @@ class Webserver:
         if self.s:
             self.s.close()
             
-try:
-    w = Webserver()
-    asyncio.run(w.serve())
-    #asyncio.create_task(w.serve())
-    #w.server()
-    print("Done?")
-#     while True:
-#         pass
-except OSError as e:
-    print("Error ", e)
-finally:
-    asyncio.new_event_loop()
+# try:
+#     w = Webserver()
+#     asyncio.run(w.serve())
+#     #asyncio.create_task(w.serve())
+#     #w.server()
+#     print("Done?")
+# #     while True:
+# #         pass
+# except OSError as e:
+#     print("Error ", e)
+# finally:
+#     asyncio.new_event_loop()
     

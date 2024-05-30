@@ -224,5 +224,5 @@ class Elliptical:
         except TypeError as e:
             print("??TypeError??,",e) 
 
-e = Elliptical()
-asyncio.run(e.run())
+# e = Elliptical()
+# asyncio.run(e.run())
