@@ -3,11 +3,14 @@ import uasyncio as asyncio
 import aioble
 import bluetooth
 import time
+from machine import UART, Pin
 
 class Elliptical:
     __DEVICE_NAME = "SCHWINN 470"
     __SERVICE_UUID = '98186d60-2f47-11e6-8899-0002a5d5c51b'
     __RECORD_READ_UUID_1 = '5c7d82a0-9803-11e3-8a6c-0002a5d5c51b'
+
+    __SEND_FILE_ENABLED = False
 
     __last_device_time = 0
     __last_delta_time = 0
@@ -17,6 +20,9 @@ class Elliptical:
 
     def __init__(self):
         pass
+
+    def __enable_send_file(self, state):
+        self.__SEND_FILE_ENABLED = state
 
     def __read_characteristic(self, char):
         try:
@@ -145,6 +151,51 @@ class Elliptical:
         return filename
     
 
+    def __sendUART(self, filename):
+        file = open(filename, "r")
+        uart1 = UART(1, baudrate=115200, tx=Pin(21), rx=Pin(5))
+        
+        print(f"Wrote filename: {filename} {uart1.write(filename + '\n') } bytes")
+        #
+        #print(f"Wrote newline: {uart1.write(b'\n')}")
+        #wait for ACK
+#         while uart1.readline() == None:
+#                 print("Waiting for ACK...")
+#                 time.sleep(1)
+#                 pass
+            
+        data = file.readline()
+        total_bytes = 0
+        while len(data) != 0:
+            print(f"Read: {str(len(data))} bytes")
+            bytes_written = uart1.write(data)
+            total_bytes += bytes_written
+            print(f"Wrote: {bytes_written} bytes")
+            
+            #wait for ACK
+            while uart1.readline() == None:
+                print("Waiting for ACK...")
+                time.sleep(1)
+                pass
+            
+            data = file.readline()
+            
+        print(f"Wrote EOF: {uart1.write('EOF\n')} bytes")
+        uart1.flush()
+            
+        #data = file.read()
+        #print(f"Read: {str(len(data))} bytes")
+        file.close()
+        
+        #Wait for done
+        data = uart1.readline()
+        while data == None:
+            data = uart1.readline()
+        print(f"Done received: {data}")
+        print(f"Wrote: {total_bytes}")
+        #uart1.close()
+
+
 
     async def run(self):
         device = await self.__find_device()
@@ -198,6 +249,7 @@ class Elliptical:
                         file = open(filename, "w")
                         header = "start_time, delta_time, cadence, resistance, energy, energy * delta_time, data"
                         print(f"{header}\n")
+                        file.write(header+"\n")
                         
                     current_time = ((time.time_ns() // 1_000_000)+(31557600000 * 30))
                     #print("    ",((time.time_ns() // 1_000_000)+(31557600000 * 30))," Data: ","".join("\\x%02x" % i for i in data))
@@ -216,13 +268,22 @@ class Elliptical:
                             print("Start detected")
                     if end_detected:
                         file.close()
+
+                        if self.__SEND_FILE_ENABLED:
+                            self.__sendUART(filename)
+
                         break
                 #end inner while loop
-                
+            #end outer while loop
         except KeyboardInterrupt as e:
             return
         except TypeError as e:
             print("??TypeError??,",e) 
 
-# e = Elliptical()
-# asyncio.run(e.run())
+
+e = Elliptical()
+#e.__enable_send_file(True)
+#filename = "2024-5-31T92545.csv"
+#e.__sendUART(filename)
+
+asyncio.run(e.run())
