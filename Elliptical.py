@@ -179,13 +179,6 @@ class Elliptical:
         uart1 = UART(1, baudrate=115200, tx=Pin(21), rx=Pin(5))
         
         print(f"Wrote filename: {filename} {uart1.write(filename + '\n') } bytes")
-        #
-        #print(f"Wrote newline: {uart1.write(b'\n')}")
-        #wait for ACK
-#         while uart1.readline() == None:
-#                 print("Waiting for ACK...")
-#                 time.sleep(1)
-#                 pass
             
         data = file.readline()
         total_bytes = 0
@@ -206,8 +199,6 @@ class Elliptical:
         print(f"Wrote EOF: {uart1.write('EOF\n')} bytes")
         uart1.flush()
             
-        #data = file.read()
-        #print(f"Read: {str(len(data))} bytes")
         file.close()
         
         #Wait for done
@@ -216,7 +207,6 @@ class Elliptical:
             data = uart1.readline()
         print(f"Done received: {data}")
         print(f"Wrote: {total_bytes}")
-        #uart1.close()
 
 
 
@@ -244,7 +234,6 @@ class Elliptical:
                 
             print(f"Reading: {self.__RECORD_READ_UUID_1},")
                 
-            #file.write(header+"\n")
             while True:
 
                 readInfo = []
@@ -253,9 +242,7 @@ class Elliptical:
                 uuid = bluetooth.UUID(self.__RECORD_READ_UUID_1)
                 
                 notify_char = await service.characteristic(uuid)
-                #(readTime, readData) = await read_characteristic(read_char)
-                
-                #readInfo.append(await read_characteristic(read_char))
+
                 print("Waiting for notifcation...")
                 await notify_char.subscribe()
                 
