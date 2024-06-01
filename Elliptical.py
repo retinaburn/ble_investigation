@@ -167,7 +167,7 @@ class Elliptical:
         data = file.readline()
         total_bytes = 0
         while len(data) != 0:
-            print(f"Read: {str(len(data))} bytes")
+            #print(f"Read: {str(len(data))} bytes")
             bytes_written = uart1.write(data)
             total_bytes += bytes_written
             print(f"Wrote: {bytes_written} bytes")
@@ -175,7 +175,7 @@ class Elliptical:
             #wait for ACK
             while uart1.readline() == None:
                 print("Waiting for ACK...")
-                time.sleep(1)
+                time.sleep(0.1)
                 pass
             
             data = file.readline()
@@ -282,7 +282,7 @@ class Elliptical:
 
 
 e = Elliptical()
-#e.__enable_send_file(True)
+e.__enable_send_file(True)
 #filename = "2024-5-31T92545.csv"
 #e.__sendUART(filename)
 
