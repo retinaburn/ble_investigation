@@ -304,9 +304,9 @@ class Elliptical:
             print("??TypeError??,",e) 
 
 
-e = Elliptical()
-e.__enable_send_file(True)
-#filename = "2024-5-31T92545.csv"
-#e.__sendUART(filename)
+#e = Elliptical()
+#e.__enable_send_file(True)
+##filename = "2024-5-31T92545.csv"
+##e.__sendUART(filename)
 
-asyncio.run(e.run())
+#asyncio.run(e.run())
