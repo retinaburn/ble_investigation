@@ -2,7 +2,10 @@ import sys
 import uasyncio as asyncio
 import aioble
 import bluetooth
+import network
+import ntptime
 import time
+import ujson
 from machine import UART, Pin
 
 class Elliptical:
@@ -19,7 +22,27 @@ class Elliptical:
     __start_time = 0   
 
     def __init__(self):
-        pass
+        try:
+            fp = open('secrets.json')
+            secretsString = fp.read()
+            secrets = ujson.loads(secretsString)
+        except OSError as e:
+            print("Error reading secret: ", e)
+            sys.exit()
+            
+        station = network.WLAN(network.STA_IF)
+        station.active(True)
+        #station.config(pm = 0xa11140) causes a wifi unknown error
+        station.connect(secrets['wifi']['ssid'], secrets['wifi']['password'])
+        while station.isconnected() == False:
+            print(f"Waiting for connection to wifi...")
+            time.sleep(1)
+            pass
+
+        print(f"Connection successful: {station.ifconfig()}")
+        ntptime.settime()
+
+
 
     def __enable_send_file(self, state):
         self.__SEND_FILE_ENABLED = state
