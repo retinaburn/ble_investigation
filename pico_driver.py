@@ -6,7 +6,7 @@ from machine import UART, Pin
 import time
 
 async def uart_poll():
-    print(f"Waiting for data...")
+    print(f"Waiting for uart data...")
     uart1 = UART(1, baudrate=115200, tx=Pin(4), rx=Pin(5))
 
     while True:
@@ -16,7 +16,7 @@ async def uart_poll():
 #             data = uart1.readline()
         data = uart1.any()
         while data == 0:
-            print("Sleeping on uart...")
+            #print("Sleeping on uart...")
             await asyncio.sleep(5)
             data = uart1.any()
         data = uart1.readline()
