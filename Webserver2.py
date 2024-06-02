@@ -67,44 +67,52 @@ class Webserver2:
     
 
     async def serve_client(self, reader, writer):
-        request = await reader.readline()
-        print(f"Content: {request}")
-        if (len(str(request)) == 0):
-            print("Skipping request...")
-            await writer.wait_closed()
-            return
-        
-        split_request = str(request).split()
-        print(f"Content: 1={split_request[0]},2={split_request[1]},3={split_request[2]}")
-        if split_request[1] == "/":
-            response = self.__getPage()
-            writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + str(len(response)) + "\r\n\r\n\r\n")
-            writer.write(response)
-            print(f"Response: {response}")
-        elif split_request[1] == "/favicon.ico":
-            writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 2\r\n\r\n\r\n")
-        else:
-            requested_file = split_request[1][1:len(split_request[1])]
-            print(f"Requested: {requested_file}")
-            f = open(requested_file, "rb")
-            data = f.read()
-            size = os.stat(requested_file)[6]
-            #print(f"Read: {data}")
-            print(f"Size: {size}, Length: {len(data)}")
-                        
-            response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n" + \
-                       "Content-Disposition: attachment; filename=\""+requested_file+"\"\r\n" + \
-                       "Content-Length: " + str(len(data)) + "\r\n" \
-                       "Connection: Close \r\n\r\n"
-            print(f"Response: {response}")
-            writer.write(response)
-            writer.write(data)
+        try:
+            request = await reader.readline()
+            print(f"Content: {request}")
+            if (len(str(request)) == 0 or request == b''):
+                print("Skipping request...")
+                await writer.wait_closed()
+                return
+            
+            split_request = str(request).split()
+            print(f"Content: 1={split_request[0]},2={split_request[1]},3={split_request[2]}")
+            if split_request[1] == "/":
+                response = self.__getPage()
+                writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + str(len(response)) + "\r\n\r\n\r\n")
+                writer.write(response)
+                print(f"Response: {response}")
+            elif split_request[1] == "/favicon.ico" or split_request[1] == "HNAP1/" or split_request[1] == "/JNAP/":
+                writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 2\r\n\r\n\r\n")
+            else:
+                requested_file = split_request[1][1:len(split_request[1])]
+                print(f"Requested: {requested_file}")
+                f = open(requested_file, "rb")
+                size = os.stat(requested_file)[6]
+                #print(f"Read: {data}")
+                print(f"Size: {size}")
+                            
+                response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n" + \
+                           "Content-Disposition: attachment; filename=\""+requested_file+"\"\r\n" + \
+                           "Content-Length: " + str(size) + "\r\n" \
+                           "Connection: Close \r\n\r\n"
+                print(f"Response: {response}")
+                writer.write(response)
+                while True:
+                    data = f.read(4096)
+                    print(f"{time.localtime()}, Data Size: {str(len(data))}")
+                    if data == b'':
+                        break
+                    writer.write(data)
+                    await writer.drain()
 
-        print("Closing")
-        await writer.drain()
-        writer.close()
-        
-        print("Closed")
+            print("Closing")
+            await writer.drain()
+            writer.close()
+            
+            print("Closed")
+        except MemoryError as e:
+            print(f"Error: {e}")
 
     async def serve(self):
         print("Serving")
