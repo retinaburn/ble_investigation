@@ -99,7 +99,7 @@ class Webserver2:
                 print(f"Response: {response}")
                 writer.write(response)
                 while True:
-                    data = f.read(4096)
+                    data = f.read(32768)
                     print(f"{time.localtime()}, Data Size: {str(len(data))}")
                     if data == b'':
                         break
