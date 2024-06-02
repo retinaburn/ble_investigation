@@ -32,7 +32,8 @@ async def uart_poll():
         RECEIVED_DATA = False
         RECEIVED_END = False
         FILE_NAME = ""
-        FILE_DATA = ""
+        FILE_DATA = 0
+        file = None
 
         while True:
             #print(f"First Line: {RECEIVED_FIRST_LINE}, Received Data: {RECEIVED_DATA}, Received End: {RECEIVED_END}")
@@ -42,6 +43,7 @@ async def uart_poll():
                 FILE_NAME = data.decode("utf-8")
                 FILE_NAME = FILE_NAME.strip()
                 uart1.write("ACK\n")
+                file = open(FILE_NAME, "w")
             elif (data == b'EOF\n' and RECEIVED_DATA):
                 RECEIVED_FIRST_LINE = False
                 RECEIVED_DATA = False
@@ -50,16 +52,22 @@ async def uart_poll():
                 
             elif (data != None and RECEIVED_FIRST_LINE and not RECEIVED_DATA):
                 RECEIVED_DATA = True
-                FILE_DATA += data.decode("utf-8")
+                str_data = data.decode("utf-8")
+                FILE_DATA += len(str_data)
+                file.write(str_data)
                 uart1.write("ACK\n")
             elif (data != None and RECEIVED_DATA):
-                FILE_DATA += data.decode("utf-8")
+                str_data = data.decode("utf-8")
+                FILE_DATA += len(str_data)
+                file.write(str_data)
                 uart1.write("ACK\n")
 
 
             if (RECEIVED_END):
                 RECEIVED_END = False
                 uart1.write("DONE\n")
+                file.close()
+                print(f"Wrote {FILE_NAME}")
                 break
 
             if data != None:
@@ -81,13 +89,13 @@ async def uart_poll():
         # print(f"Read: {data}")
 
         print(f"Filename: {str(FILE_NAME)}")
-        print(f"File Data Size: {str(len(FILE_DATA))}")
-        print(f"File Data: {FILE_DATA}")
+        print(f"File Data Size: {str(FILE_DATA)}")
+#         print(f"File Data: {FILE_DATA}")
 
-        file = open(FILE_NAME, "w")
-        file.write(FILE_DATA)
-        file.close()
-        print(f"Wrote {FILE_NAME}")
+        #file = open(FILE_NAME, "w")
+        #file.write(FILE_DATA)
+        #file.close()
+        #print(f"Wrote {FILE_NAME}")
 
 #asyncio.run(uart_poll())
 #asyncio.run(main())
