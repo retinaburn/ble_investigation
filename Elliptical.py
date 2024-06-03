@@ -257,7 +257,7 @@ class Elliptical:
                     if filename == "":
                         filename = self.__get_filename()
                         file = open(filename, "w")
-                        header = "start_time, delta_time, cadence, resistance, energy, energy * delta_time, data"
+                        header = "time, start_time, delta_time, cadence, resistance, energy, energy * delta_time, data"
                         print(f"{header}\n")
                         file.write(header+"\n")
                         
