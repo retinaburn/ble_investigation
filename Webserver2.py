@@ -82,7 +82,7 @@ class Webserver2:
                 writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + str(len(response)) + "\r\n\r\n\r\n")
                 writer.write(response)
                 print(f"Response: {response}")
-            elif split_request[1] == "/favicon.ico" or split_request[1] == "HNAP1/" or split_request[1] == "/JNAP/":
+            elif split_request[1] == "/favicon.ico" or split_request[1] == "/HNAP1" or split_request[1] == "/HNAP1/" or split_request[1] == "/JNAP/":
                 writer.write("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 2\r\n\r\n\r\n")
             else:
                 requested_file = split_request[1][1:len(split_request[1])]
@@ -137,3 +137,4 @@ class Webserver2:
 # except KeyboardInterrupt:
 #     loop.close()
 # print("Done")
+

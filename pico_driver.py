@@ -32,7 +32,7 @@ async def uart_poll():
         RECEIVED_DATA = False
         RECEIVED_END = False
         FILE_NAME = ""
-        FILE_DATA = 0
+        DATA_SIZE = 0
         file = None
 
         while True:
@@ -53,12 +53,12 @@ async def uart_poll():
             elif (data != None and RECEIVED_FIRST_LINE and not RECEIVED_DATA):
                 RECEIVED_DATA = True
                 str_data = data.decode("utf-8")
-                FILE_DATA += len(str_data)
+                DATA_SIZE += len(str_data)
                 file.write(str_data)
                 uart1.write("ACK\n")
             elif (data != None and RECEIVED_DATA):
                 str_data = data.decode("utf-8")
-                FILE_DATA += len(str_data)
+                DATA_SIZE += len(str_data)
                 file.write(str_data)
                 uart1.write("ACK\n")
 
@@ -89,7 +89,7 @@ async def uart_poll():
         # print(f"Read: {data}")
 
         print(f"Filename: {str(FILE_NAME)}")
-        print(f"File Data Size: {str(FILE_DATA)}")
+        print(f"File Data Size: {str(DATA_SIZE)}")
 #         print(f"File Data: {FILE_DATA}")
 
         #file = open(FILE_NAME, "w")
