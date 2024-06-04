@@ -6,6 +6,7 @@ import network
 import ntptime
 import time
 import ujson
+import os
 from machine import UART, Pin
 
 class Elliptical:
@@ -173,33 +174,88 @@ class Elliptical:
         print(f"Filename: {filename}")
         return filename
     
+    MAX_WAIT_FOR_ACK = 20
+
+    def wait_for_ack(self, uart1):
+        waiting_for_ack = 0
+        line = uart1.readline()
+        while line == None:
+            print(f"Read for ack: {line}")
+                                        
+            waiting_for_ack += 1
+            print(f"{waiting_for_ack} - Waiting for ACK...")
+            time.sleep(0.1)
+            if waiting_for_ack == self.MAX_WAIT_FOR_ACK:
+                return False
+            line = uart1.readline()
+        print(f"ACK? {line}")
+        if line == b'NACK\n':
+            return False
+        elif line == b'ACK\n':
+            return True    
+        return True
+
 
     def __sendUART(self, filename):
+        FILE_SIZE = os.stat(filename)[6]
+        
         file = open(filename, "r")
         uart1 = UART(1, baudrate=115200, tx=Pin(21), rx=Pin(5))
         
-        print(f"Wrote filename: {filename} {uart1.write(filename + '\n') } bytes")
+        data = filename + '\n'
+        print(f"Wrote filename: {data} {uart1.write(data) } bytes")
+        #wait for ACK            
+        while not self.wait_for_ack(uart1):
+            print("Resending data...")
+            bytes_written = uart1.write(data)
+            uart1.flush()
+            print(f"Re-wrote: {bytes_written} bytes, {data}")
 
-        CHUNK_SIZE = 32768         
+
+
+        CHUNK_SIZE = 1024     
         data = file.read(CHUNK_SIZE)
         total_bytes = 0
         while len(data) != 0:
+            print(f"Writing chunk size: {str(len(data))}")
             uart1.write(str(len(data)) + '\n')
             uart1.flush()
+
+            #Wait for ACK on Chunk Size
+            while not self.wait_for_ack(uart1):
+                print("Resending data...")
+                bytes_written = uart1.write(str(len(data)) + '\n')
+                uart1.flush()
+                print(f"Re-wrote: {bytes_written} bytes, {str(len(data)) + '\n'}")
+
+
             #print(f"Read: {str(len(data))} bytes")
+            print(f"Writing data: ={data}=")
             bytes_written = uart1.write(data)
             uart1.flush()
             total_bytes += bytes_written
-            print(f"Wrote: {bytes_written} bytes")
+            print(f"Wrote: {bytes_written} bytes, ={data}=")
             
-            #wait for ACK
-            while uart1.readline() == None:
-                print("Waiting for ACK...")
-                time.sleep(0.1)
-                pass
+            #wait for ACK            
+            while not self.wait_for_ack(uart1):
+                print("Resending data...")
+                bytes_written = uart1.write(data)
+                uart1.flush()
+                print(f"Re-wrote: {bytes_written} bytes, {data}")
+         
+            if FILE_SIZE == total_bytes:
+                break
             
             data = file.read(CHUNK_SIZE)
-        
+            print(f"{FILE_SIZE} vs {total_bytes + len(data)}")
+            if FILE_SIZE != (total_bytes + len(data)):
+                while len(data) < CHUNK_SIZE:
+                    print(f"Read less than CHUNK_SIZE: {len(data)} < {CHUNK_SIZE}, ={data}=")
+                    additional_data = file.read(CHUNK_SIZE - len(data))
+                    data += additional_data
+                    print(f"Read additional data, so data is ={data}=")
+            print(f"Read from file: {data}")
+
         uart1.write(b'4\n')
         print(f"Wrote EOF: {uart1.write('EOF\n')} bytes")
         uart1.flush()

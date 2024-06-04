@@ -4,22 +4,29 @@ from Webserver2 import Webserver2
 #from Elliptical import Elliptical
 from machine import UART, Pin
 import time
+uart1 = None
 
 async def uart_poll():
+    #debug_file = open("debug.csv", "w")
+    #debug_file.write(b'')
+    #debug_file.close()
+    
     print(f"Waiting for uart data...")
     uart1 = UART(1, baudrate=115200, tx=Pin(4), rx=Pin(5))
-
+    
     while True:
 #         data = uart1.readline()
 #         while data == None:
 #             await asyncio.sleep(1)
 #             data = uart1.readline()
-        data = uart1.any()
-        while data == 0:
-            #print("Sleeping on uart...")
-            await asyncio.sleep(5)
-            data = uart1.any()
+        any_data = uart1.any()
+        while any_data == 0:
+            print("Sleeping on uart...")
+            await asyncio.sleep(0.1)
+            any_data = uart1.any()
+        print("found data")
         data = uart1.readline()
+        print(f"Data found: {data}")
 
         #Append data until newline reached
         while data[-1] != 10:
@@ -28,94 +35,77 @@ async def uart_poll():
                 readData = uart1.readline()
             data += str(readData)
 
-        RECEIVED_FIRST_LINE = False
-        RECEIVED_DATA = False
-        RECEIVED_END = False
         FILE_NAME = ""
         DATA_SIZE = 0
         file = None
-
+        
+        print(f"Filename: {data[0:len(data)-1]}")
+        FILE_NAME = data[0:len(data)-1]
+        file = open(FILE_NAME, "w")
+        
+        uart1.write('ACK\n')
+        MAX_LOOP_FOR_CHUNK = 20
+        
         while True:
-            #print(f"First Line: {RECEIVED_FIRST_LINE}, Received Data: {RECEIVED_DATA}, Received End: {RECEIVED_END}")
-            if data != None:
-                print(f"Read: {str(len(data))} bytes, last 10: {data[-10:]}")          
-
-            if (data != None and not RECEIVED_FIRST_LINE and not RECEIVED_END):
-                RECEIVED_FIRST_LINE = True
-                FILE_NAME = data.decode("utf-8")
-                FILE_NAME = FILE_NAME.strip()
-                uart1.write("ACK\n")
-                print(f"Opening file: {FILE_NAME}")
-                file = open(FILE_NAME, "w")
-            elif (data == b'EOF\n' and RECEIVED_DATA):
-                RECEIVED_FIRST_LINE = False
-                RECEIVED_DATA = False
-                RECEIVED_END = True
-                uart1.write("ACK\n")
-                
-            elif (data != None and RECEIVED_FIRST_LINE and not RECEIVED_DATA):
-                RECEIVED_DATA = True
-                str_data = data.decode("utf-8")
-                DATA_SIZE += len(str_data)
-                file.write(str_data)
-                uart1.write("ACK\n")
-            elif (data != None and RECEIVED_DATA):
-                str_data = data.decode("utf-8")
-                DATA_SIZE += len(str_data)
-                file.write(str_data)
-                uart1.write("ACK\n")
-
-
-            if (RECEIVED_END):
-                RECEIVED_END = False
-                uart1.write("DONE\n")
-                file.close()
-                print(f"Wrote {FILE_NAME}")
-                break
-
-
-            #await asyncio.sleep(1)
-            data = None
-            while data == None:
-                data = uart1.readline()
+            #debug_file = open("debug.csv", "a")
             
-            print(f"Data: {data}")
+            #Read chunk size
+            data = uart1.readline()
+            loop_for_chunk = 0
+            while data == None:
+                loop_for_chunk += 1
+                time.sleep(0.1)
+                if loop_for_chunk == MAX_LOOP_FOR_CHUNK:
+                    loop_for_chunk = 0
+                    print("Sending NACK for CHUNK...")
+                    uart1.write('NACK\n')
+                data = uart1.readline()
             #Append data until newline reached
             while data[-1] != 10:
                 readData = uart1.readline()
                 while readData == None:
                     readData = uart1.readline()
-                data += readData
-            print(f"Additional Data: {data}")
+                data += str(readData)
+            uart1.write('ACK\n') #ACK Chunk Size
             
-            print(f"Read length: {str(len(data))}")
-            read_length = int(data[0:len(data)-1])
-            print(f"Read Size Expected: {read_length}")
+            #DEBUG write record size
+            #wrote = debug_file.write(b'='+data[0:len(data)-1]+b'=')
+            #print(f"Wrote record size: {wrote}, {data}")
             
-            data = bytearray()
-            CHUNK_SIZE = read_length
-            while len(data) < CHUNK_SIZE:
-                print(f"{len(data)} vs {read_length}")
-                read_data = uart1.read(CHUNK_SIZE - len(data))
-                while read_data == None:
-                    print(f"Sleeping...{len(data)} vs {read_length}")
-                    await asyncio.sleep(0.1)
-                    read_data = uart1.read(read_length - len(data))
-                data.extend(bytearray(read_data))
-            print(f"Read {len(data)} bytes, last 10: {data[-10:]}")
-            read_data = 0
-        
-        # data = str(data)
-        # print(f"Read: {data}")
+            CHUNK_SIZE = int(data[0:len(data)-1])
+            print(f"Chunk Size Expected: {CHUNK_SIZE}")            
+            #Read chunk
+            data = uart1.read(CHUNK_SIZE)
+            while data == None:
+                data = uart1.read(CHUNK_SIZE)
+                        
+            actual_size = len(data)
+            while actual_size < CHUNK_SIZE:
+                print(f"Actual Size: {str(actual_size)}")
+                if actual_size < CHUNK_SIZE:
+                    print("Sending NACK for data...")
+                    uart1.write('NACK\n')
+                    time.sleep(0.1)
+                data = uart1.read(CHUNK_SIZE)
+                while data == None:
+                    data = uart1.read(CHUNK_SIZE)
+                actual_size = len(data)
+      
+            if data == b'EOF\n':
+                break      
+            file.write(data)
+            
+            #print(f"Read from uart: {data}")
+            #print(f"Writing: {data}")
+            #debug_file.write(data)
+            print(f"Writing ACK")
+            uart1.write('ACK\n')            
+            #debug_file.close()
+            
 
-        print(f"Filename: {str(FILE_NAME)}")
-        print(f"File Data Size: {str(DATA_SIZE)}")
-#         print(f"File Data: {FILE_DATA}")
-
-        #file = open(FILE_NAME, "w")
-        #file.write(FILE_DATA)
-        #file.close()
-        #print(f"Wrote {FILE_NAME}")
+        print(f"Writing ACK")
+        uart1.write('ACK\n') 
+        file.close()
 
 #asyncio.run(uart_poll())
 #asyncio.run(main())
