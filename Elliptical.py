@@ -40,7 +40,7 @@ class Elliptical:
             pass
 
         print(f"Connection successful: {station.ifconfig()}")
-        ntptime.settime()
+        #ntptime.settime()
 
 
 
@@ -179,12 +179,16 @@ class Elliptical:
         uart1 = UART(1, baudrate=115200, tx=Pin(21), rx=Pin(5))
         
         print(f"Wrote filename: {filename} {uart1.write(filename + '\n') } bytes")
-            
-        data = file.readline()
+
+        CHUNK_SIZE = 32768         
+        data = file.read(CHUNK_SIZE)
         total_bytes = 0
         while len(data) != 0:
+            uart1.write(str(len(data)) + '\n')
+            uart1.flush()
             #print(f"Read: {str(len(data))} bytes")
             bytes_written = uart1.write(data)
+            uart1.flush()
             total_bytes += bytes_written
             print(f"Wrote: {bytes_written} bytes")
             
@@ -194,8 +198,9 @@ class Elliptical:
                 time.sleep(0.1)
                 pass
             
-            data = file.readline()
-            
+            data = file.read(CHUNK_SIZE)
+        
+        uart1.write(b'4\n')
         print(f"Wrote EOF: {uart1.write('EOF\n')} bytes")
         uart1.flush()
             
@@ -291,9 +296,9 @@ class Elliptical:
             print("??TypeError??,",e) 
 
 
-#e = Elliptical()
-#e.__enable_send_file(True)
-##filename = "2024-5-31T92545.csv"
-##e.__sendUART(filename)
+e = Elliptical()
+e.__enable_send_file(True)
+filename = "2024-6-2T171625.csv"
+e.__sendUART(filename)
 
 #asyncio.run(e.run())

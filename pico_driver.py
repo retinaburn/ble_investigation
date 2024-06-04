@@ -32,17 +32,20 @@ async def uart_poll():
         RECEIVED_DATA = False
         RECEIVED_END = False
         FILE_NAME = ""
-        FILE_DATA = 0
+        DATA_SIZE = 0
         file = None
 
         while True:
             #print(f"First Line: {RECEIVED_FIRST_LINE}, Received Data: {RECEIVED_DATA}, Received End: {RECEIVED_END}")
-            
+            if data != None:
+                print(f"Read: {str(len(data))} bytes, last 10: {data[-10:]}")          
+
             if (data != None and not RECEIVED_FIRST_LINE and not RECEIVED_END):
                 RECEIVED_FIRST_LINE = True
                 FILE_NAME = data.decode("utf-8")
                 FILE_NAME = FILE_NAME.strip()
                 uart1.write("ACK\n")
+                print(f"Opening file: {FILE_NAME}")
                 file = open(FILE_NAME, "w")
             elif (data == b'EOF\n' and RECEIVED_DATA):
                 RECEIVED_FIRST_LINE = False
@@ -53,12 +56,12 @@ async def uart_poll():
             elif (data != None and RECEIVED_FIRST_LINE and not RECEIVED_DATA):
                 RECEIVED_DATA = True
                 str_data = data.decode("utf-8")
-                FILE_DATA += len(str_data)
+                DATA_SIZE += len(str_data)
                 file.write(str_data)
                 uart1.write("ACK\n")
             elif (data != None and RECEIVED_DATA):
                 str_data = data.decode("utf-8")
-                FILE_DATA += len(str_data)
+                DATA_SIZE += len(str_data)
                 file.write(str_data)
                 uart1.write("ACK\n")
 
@@ -70,26 +73,43 @@ async def uart_poll():
                 print(f"Wrote {FILE_NAME}")
                 break
 
-            if data != None:
-                print(f"Read: {str(len(data))} bytes,   {data}")          
 
             #await asyncio.sleep(1)
             data = None
             while data == None:
                 data = uart1.readline()
             
+            print(f"Data: {data}")
             #Append data until newline reached
             while data[-1] != 10:
                 readData = uart1.readline()
                 while readData == None:
                     readData = uart1.readline()
                 data += readData
+            print(f"Additional Data: {data}")
+            
+            print(f"Read length: {str(len(data))}")
+            read_length = int(data[0:len(data)-1])
+            print(f"Read Size Expected: {read_length}")
+            
+            data = bytearray()
+            CHUNK_SIZE = read_length
+            while len(data) < CHUNK_SIZE:
+                print(f"{len(data)} vs {read_length}")
+                read_data = uart1.read(CHUNK_SIZE - len(data))
+                while read_data == None:
+                    print(f"Sleeping...{len(data)} vs {read_length}")
+                    await asyncio.sleep(0.1)
+                    read_data = uart1.read(read_length - len(data))
+                data.extend(bytearray(read_data))
+            print(f"Read {len(data)} bytes, last 10: {data[-10:]}")
+            read_data = 0
         
         # data = str(data)
         # print(f"Read: {data}")
 
         print(f"Filename: {str(FILE_NAME)}")
-        print(f"File Data Size: {str(FILE_DATA)}")
+        print(f"File Data Size: {str(DATA_SIZE)}")
 #         print(f"File Data: {FILE_DATA}")
 
         #file = open(FILE_NAME, "w")
