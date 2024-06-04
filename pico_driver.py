@@ -11,20 +11,20 @@ async def uart_poll():
     #debug_file.write(b'')
     #debug_file.close()
     
-    print(f"Waiting for uart data...")
+
     uart1 = UART(1, baudrate=115200, tx=Pin(4), rx=Pin(5))
     
     while True:
-#         data = uart1.readline()
-#         while data == None:
-#             await asyncio.sleep(1)
-#             data = uart1.readline()
+
+        #Wait for UART data
         any_data = uart1.any()
+        print(f"Waiting for uart data...")
         while any_data == 0:
-            print("Sleeping on uart...")
+            #print("Sleeping on uart...")
             await asyncio.sleep(0.1)
             any_data = uart1.any()
-        print("found data")
+                
+        #Get filename
         data = uart1.readline()
         print(f"Data found: {data}")
 
@@ -43,12 +43,12 @@ async def uart_poll():
         FILE_NAME = data[0:len(data)-1]
         file = open(FILE_NAME, "w")
         
+        #ACK Filename
         uart1.write('ACK\n')
         MAX_LOOP_FOR_CHUNK = 20
         
         while True:
-            #debug_file = open("debug.csv", "a")
-            
+
             #Read chunk size
             data = uart1.readline()
             loop_for_chunk = 0
@@ -68,17 +68,17 @@ async def uart_poll():
                 data += str(readData)
             uart1.write('ACK\n') #ACK Chunk Size
             
-            #DEBUG write record size
-            #wrote = debug_file.write(b'='+data[0:len(data)-1]+b'=')
-            #print(f"Wrote record size: {wrote}, {data}")
-            
+            #Set chunk size            
             CHUNK_SIZE = int(data[0:len(data)-1])
-            print(f"Chunk Size Expected: {CHUNK_SIZE}")            
-            #Read chunk
+
+            #Try to read chunk size worth of bytes
             data = uart1.read(CHUNK_SIZE)
+            #Loop until there is data
             while data == None:
                 data = uart1.read(CHUNK_SIZE)
                         
+            #if we read less data than the chunk size
+            #Send a NACK, to try reading that chunk again
             actual_size = len(data)
             while actual_size < CHUNK_SIZE:
                 print(f"Actual Size: {str(actual_size)}")
@@ -90,22 +90,22 @@ async def uart_poll():
                 while data == None:
                     data = uart1.read(CHUNK_SIZE)
                 actual_size = len(data)
-      
+            
+            DATA_SIZE += actual_size 
             if data == b'EOF\n':
                 break      
+            
+            #Write chunk of data to filesystme
             file.write(data)
             
-            #print(f"Read from uart: {data}")
-            #print(f"Writing: {data}")
-            #debug_file.write(data)
-            print(f"Writing ACK")
+            #ACK chunk of data            
             uart1.write('ACK\n')            
-            #debug_file.close()
             
 
-        print(f"Writing ACK")
+        #ACK EOF
         uart1.write('ACK\n') 
         file.close()
+        print(f"Read {ACTUAL_SIZE} bytes")
 
 #asyncio.run(uart_poll())
 #asyncio.run(main())
