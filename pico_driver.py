@@ -47,6 +47,7 @@ async def uart_poll():
         uart1.write('ACK\n')
         MAX_LOOP_FOR_CHUNK = 20
         
+        print("Receiving data...")
         while True:
 
             #Read chunk size
@@ -83,6 +84,9 @@ async def uart_poll():
             while actual_size < CHUNK_SIZE:
                 print(f"Actual Size: {str(actual_size)}")
                 if actual_size < CHUNK_SIZE:
+                    #Clear out any remaining garbage data
+                    
+                    
                     print("Sending NACK for data...")
                     uart1.write('NACK\n')
                     time.sleep(0.1)
@@ -90,10 +94,12 @@ async def uart_poll():
                 while data == None:
                     data = uart1.read(CHUNK_SIZE)
                 actual_size = len(data)
-            
-            DATA_SIZE += actual_size 
+                        
             if data == b'EOF\n':
                 break      
+            
+            DATA_SIZE += actual_size 
+            print(f"Read so far {DATA_SIZE}")
             
             #Write chunk of data to filesystme
             file.write(data)
@@ -105,7 +111,7 @@ async def uart_poll():
         #ACK EOF
         uart1.write('ACK\n') 
         file.close()
-        print(f"Read {ACTUAL_SIZE} bytes")
+        print(f"Read {DATA_SIZE} bytes")
 
 #asyncio.run(uart_poll())
 #asyncio.run(main())
