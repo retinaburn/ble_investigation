@@ -181,13 +181,21 @@ class Elliptical:
         line = uart1.readline()
         while line == None:
             print(f"Read for ack: {line}")
-                                        
+                        
             waiting_for_ack += 1
             print(f"{waiting_for_ack} - Waiting for ACK...")
             time.sleep(0.1)
             if waiting_for_ack == self.MAX_WAIT_FOR_ACK:
                 return False
             line = uart1.readline()
+
+        while line[-1] != 10:
+            print("Reading additional data for ACK")
+            additional_line = uart1.readline()
+            while additional_line == None:
+                additional_line = uart1.readline()
+            line += additional_line
+        
         print(f"ACK? {line}")
         if line == b'NACK\n':
             return False
@@ -213,7 +221,7 @@ class Elliptical:
 
 
 
-        CHUNK_SIZE = 1024     
+        CHUNK_SIZE = 16384     
         data = file.read(CHUNK_SIZE)
         total_bytes = 0
         while len(data) != 0:
@@ -223,18 +231,19 @@ class Elliptical:
 
             #Wait for ACK on Chunk Size
             while not self.wait_for_ack(uart1):
-                print("Resending data...")
+                print("Resending chunk size...")
                 bytes_written = uart1.write(str(len(data)) + '\n')
                 uart1.flush()
                 print(f"Re-wrote: {bytes_written} bytes, {str(len(data)) + '\n'}")
 
 
-            #print(f"Read: {str(len(data))} bytes")
-            print(f"Writing data: ={data}=")
+            print(f"Read: {str(len(data))} bytes")
+            #print(f"Writing data: ={data}=")
             bytes_written = uart1.write(data)
             uart1.flush()
             total_bytes += bytes_written
-            print(f"Wrote: {bytes_written} bytes, ={data}=")
+            print(f"Wrote: {bytes_written} bytes")
+            #print(f"Wrote: {bytes_written} bytes, ={data}=")
             
             #wait for ACK            
             while not self.wait_for_ack(uart1):
@@ -254,7 +263,7 @@ class Elliptical:
                     additional_data = file.read(CHUNK_SIZE - len(data))
                     data += additional_data
                     print(f"Read additional data, so data is ={data}=")
-            print(f"Read from file: {data}")
+            #print(f"Read from file: {data}")
 
         uart1.write(b'4\n')
         print(f"Wrote EOF: {uart1.write('EOF\n')} bytes")
